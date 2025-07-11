@@ -1,16 +1,23 @@
-import { useState, useRef, useMemo } from 'react';
+import { useState, useRef, useMemo, useEffect } from 'react';
 
 const ToDo = () => {
   const [input, setInput] = useState('');
-  const [todos, setTodos] = useState([]);
+  const [todos, setTodos] = useState(() => {
+  const stored = localStorage.getItem('todo');
+  return stored ? JSON.parse(stored) : [];
+});
   const [editId, setEditId] = useState(null);
+  const [error, setError] = useState('')
   const [priority, setPriority] = useState('low');
   const [editInput, setEditInput] = useState('');
   const [editPriority, setEditPriority] = useState('low');
   const refid = useRef(0);
 
   const addTodo = () => {
-    if (input.trim() === '') return;
+    if (input.trim() === ''){ 
+      setError('please add todo') 
+      return;
+    }
     refid.current += 1;
 
     const newTodo = {
@@ -23,6 +30,7 @@ const ToDo = () => {
     setTodos([...todos, newTodo]);
     setInput('');
     setPriority('low');
+    setError('')
   };
 
   const deleteTodo = (id) => {
@@ -71,6 +79,17 @@ const ToDo = () => {
     )
   }, [todos])
 
+  useEffect(() => {
+  localStorage.setItem('todo', JSON.stringify(todos));
+}, [todos]);
+useEffect(() => {
+  if (todos.length > 0) {
+    const maxId = Math.max(...todos.map(todo => todo.id));
+    refid.current = maxId;
+  }
+}, [todos]);
+
+
   return (
     <div className="todo-container">
       <h2 className="todo-heading">📝 Todo App</h2>
@@ -79,7 +98,9 @@ const ToDo = () => {
         <input
           type="text"
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={(e) => {setInput(e.target.value);
+            if(error) setError('');
+          }}
           onKeyDown={(e) => {
             if (e.key === 'Enter') addTodo();
           }}
@@ -97,6 +118,7 @@ const ToDo = () => {
         </select>
         <button onClick={addTodo} className="todo-button">Add</button>
       </div>
+      {error && <p style={{ color: 'red', marginTop: '5px' }}>{error}</p>}
 
       <ul className="todo-list">
         {sortedOrder.map((todo) => (
@@ -148,6 +170,7 @@ const ToDo = () => {
                     marginLeft: '8px',
                   }}
                 >
+                   {/* {todo.id}. */}
                   {todo.text}
                 </span>
                 <span
@@ -165,12 +188,13 @@ const ToDo = () => {
                 >
                   [{todo.priority}]
                 </span>
-                <button className="todo-edit-button" onClick={() => editing(todo.id, todo.text, todo.priority)}>Edit</button>
+                {!todo.completed && (<button className="todo-edit-button" onClick={() => editing(todo.id, todo.text, todo.priority)}>Edit</button>)}
               </>
             )}
             <button
               className="todo-delete-button"
               onClick={() => deleteTodo(todo.id)}
+               disabled={editId !== null}
             >
               Delete
             </button>
