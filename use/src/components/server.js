@@ -137,3 +137,56 @@ app.patch('/users/:id', (req, res) => {
 app.listen(8080, () => {
   console.log('Server listening on 8080');
 });
+
+
+const express = require('express');
+const mongoose = require('mongoose');
+const app = express();
+
+app.use(express.json());
+
+mongoose.connect('mongodb://127.0.0.1:27017/mydb')
+  .then(() => console.log('MongoDB connected'))
+  .catch(err => console.error('MongoDB connection error:', err))
+
+
+  const userSchema = new mongoose.Schema({
+    name:{
+      type:String,
+      required:true,
+    },
+   email: {
+    type:String,
+      required:true,
+      unique:true,
+    }, 
+    age:{
+      type :Number,
+      min:0,
+    }
+  })
+const User=mongoose.model('User',userSchema)
+// create
+app.post('/users',async (req, res)=>{
+  try{
+    const user = new User(req.body)
+    await user.save()
+    res.status(201).json({message:'user created',user})
+  }catch(err){
+    res.status(400).json({ error: err.message });
+  }
+})
+// Read
+app.get('/users', async (req, res) => {
+  try {
+    const users = await User.find();
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.listen(3045, () => {
+  console.log('Server running on server 3045');
+});
+
